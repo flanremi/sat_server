@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: yolo
+  name: yolo-deployment
+
+
+spec:
+  selector:
+    matchLabels:
+      app: yolo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: yolo
+    spec:
+      volumes:
+        - name: codefile
+          hostPath:
+            path: /home/leslie/python-darknet-docker/test
+        - name: display
+          hostPath:
+            path: /tmp/.X11-unix
+      nodeName: '103'
+      containers:
+      - name: yolo
+        image: gmontamat/python-darknet:cpu
+        workingDir: /usr/src/app
+        command: ["python3"]
+        args: [leslie_video.py]
+        volumeMounts:
+          - mountPath: /tmp/.X11-unix
+            name: display
+          - mountPath: /usr/src/app
+            name: codefile
+        env:
+          - name: DISPLAY
+            value: ":0"
+        ports:
+        - containerPort: 80
+
+  
+          
+
+      
+

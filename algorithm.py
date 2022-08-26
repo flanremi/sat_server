@@ -47,7 +47,7 @@ class Algo:
                 decision[max_index] = 1
             results.append(decision)
             print("Scheduler is working for satellite {0}".format(sat), end="\r")
-        return results
+        return results, traffic
 
     # machine learning, one approach of unsupervised learning
     def cluster(self, traffic, cluster_num=3):
