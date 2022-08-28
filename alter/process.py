@@ -34,15 +34,17 @@ class TimeCore:
         self.file_limit = 100
         self._Ttime = 0
         self.tp = tp
+        self.inRefresh = False
         self.listener = None
 
     def addRequest(self, client_pos: int, name: str, size: int):
+        while self.inRefresh:
+            time.sleep(0.5)
         client = self.client_list[client_pos]
         if not client.get(name):
-            client.update({name: {"time": 0, "size":size}})
+            client.update({name: {"time": 0, "size": size, "is_cache": False}})
         file = client.get(name)
         file.update({"time": file.get("time") + 1})
-
 
     def getFeature(self):
         features = []
@@ -63,7 +65,18 @@ class TimeCore:
 
     # todo 处理异步问题，处理传输时更新问题，处理cache冲突问题
     def refresh(self):
-        pass
+        self.inRefresh = True
+        if self.listener:
+            self.listener.refreshListener(self, 0, self.client_list)
+        for i in range(self.client_num):
+            client = self.client_list[i]
+            client_pre = self.client_list_pre[i]
+            for key, value in client.items():
+                pass
+        # with open("mv2.mp4", "rb") as file:
+        #     res = requests.post("http://192.168.50.63:4995/upload", files={"file": file}, data={"name": "cheat1.mp4"})
+        #     print(res.text)
+        # pass
 
     def run(self):
         def run_():
@@ -74,9 +87,8 @@ class TimeCore:
                     self.listener.timeChangeListener(self)
                 if self._Ttime % 60 == 0:
                     self.tp.submit(self.refresh)
+
         self.tp.submit(run_)
 
     def setListener(self, listener: CoreInter):
         self.listener = listener
-
-

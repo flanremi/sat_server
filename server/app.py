@@ -15,6 +15,6 @@ theard_pool = ThreadPoolExecutor(max_workers=4)
 # def hello_world():
 #     return "<p>Hello, World!</p>"
 
-TimeCore(120, theard_pool).run()
-while True:
-    pass
+# TimeCore(120, theard_pool).run()
+# while True:
+#     pass
