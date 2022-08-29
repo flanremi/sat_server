@@ -1,4 +1,5 @@
 import math
+import os
 import random
 import sys
 import time
@@ -15,7 +16,7 @@ class CoreInter(metaclass=ABCMeta):
     def timeChangeListener(self, core):
         pass
 
-    # 0 start 1 processing 2 end
+    # 0 start 1 processing 11 add 12 delete 2 end
     @abstractmethod
     def refreshListener(self, core, period, fin_list: list):
         pass
@@ -37,12 +38,12 @@ class TimeCore:
         self.inRefresh = False
         self.listener = None
 
-    def addRequest(self, client_pos: int, name: str, size: int):
+    def addRequest(self, client_pos: int, name: str):
         while self.inRefresh:
             time.sleep(0.5)
         client = self.client_list[client_pos]
         if not client.get(name):
-            client.update({name: {"time": 0, "size": size, "is_cache": 0}})
+            client.update({name: {"time": 0, "size": os.stat("file/" + name).st_size / 1024, "is_cache": 0}})
         file = client.get(name)
         file.update({"time": file.get("time") + 1})
 
@@ -83,10 +84,23 @@ class TimeCore:
             client_pre = self.client_list_pre[i]
             for key, value in client.items():
                 file_pre = client_pre.get(key)
-                if client_pre.get(key):
-                    pass
+                if file_pre:
+                    if file_pre.get("is_cache") == 1 and value.get("is_cache") == 0:
+                        if self.listener:
+                            self.tp.submit(self.listener.refreshListener, 12, self.client_list)
+                    elif file_pre.get("is_cache") == 0 and value.get("is_cache") == 1:
+                        if self.listener:
+                            self.tp.submit(self.listener.refreshListener, 11, self.client_list)
                 else:
-                    pass
+                    file_pre = {}
+                    client_pre.update({key: file_pre})
+                    if value.get("is_cache") == 1:
+                        if self.listener:
+                            self.tp.submit(self.listener.refreshListener, 11, self.client_list)
+                file_pre.update(value)
+        if self.listener:
+            self.listener.refreshListener(self, 2, self.client_list)
+        self.inRefresh = False
         # with open("mv2.mp4", "rb") as file:
         #     res = requests.post("http://192.168.50.63:4995/upload", files={"file": file}, data={"name": "cheat1.mp4"})
         #     print(res.text)
@@ -106,3 +120,6 @@ class TimeCore:
 
     def setListener(self, listener: CoreInter):
         self.listener = listener
+
+    def getfile(self, client_pos, name):
+        return self.client_list_pre[client_pos].get(name)

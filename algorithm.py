@@ -26,6 +26,9 @@ class Algo:
             file_num = len(data)
             # value measurement
             value = np.zeros(file_num, float)
+            if file_num == 0:
+                results.append(value)
+                continue
             for file_id in range(file_num):
                 feature = data[file_id]
                 v = w1 * feature[0] + w2 * feature[1] + w3 * feature[2]
