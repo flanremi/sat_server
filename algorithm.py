@@ -36,7 +36,7 @@ class Algo:
             max_index = np.argmax(value)
             while res_ >= (data[max_index])[2] and counter > 0 and file_num > 0:
                 res_ -= (data[max_index])[2]
-                counter -= 1
+                counter -= (data[max_index])[1]
                 file_num -= 1
                 value[max_index] = np.min(value) - 1
                 limit = data[max_index][1]

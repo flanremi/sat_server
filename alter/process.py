@@ -42,7 +42,7 @@ class TimeCore:
             time.sleep(0.5)
         client = self.client_list[client_pos]
         if not client.get(name):
-            client.update({name: {"time": 0, "size": size, "is_cache": False}})
+            client.update({name: {"time": 0, "size": size, "is_cache": 0}})
         file = client.get(name)
         file.update({"time": file.get("time") + 1})
 
@@ -56,9 +56,17 @@ class TimeCore:
             features.append(files)
         return features
 
-    def getDispatch(self):
+    def dispatch(self):
         a = Algo(self.file_limit, "", self.sat_num, self.sat_size)
-        return a.linear(self.getFeature())
+        (results, features) = a.linear(self.getFeature())
+        for i in range(self.client_num):
+            client = self.client_list[i]
+            result = results[i].tolist()
+            names = features[i]
+            for j in range(len(names)):
+                name = names[j][3]
+                file = client.get(name)
+                file.update({"is_cache": result[j]})
 
     def getTime(self):
         return self._Ttime
@@ -68,11 +76,17 @@ class TimeCore:
         self.inRefresh = True
         if self.listener:
             self.listener.refreshListener(self, 0, self.client_list)
+        # 基于当前文件访问情况决定各文件是否缓存
+        self.dispatch()
         for i in range(self.client_num):
             client = self.client_list[i]
             client_pre = self.client_list_pre[i]
             for key, value in client.items():
-                pass
+                file_pre = client_pre.get(key)
+                if client_pre.get(key):
+                    pass
+                else:
+                    pass
         # with open("mv2.mp4", "rb") as file:
         #     res = requests.post("http://192.168.50.63:4995/upload", files={"file": file}, data={"name": "cheat1.mp4"})
         #     print(res.text)
