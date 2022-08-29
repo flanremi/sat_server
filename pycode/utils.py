@@ -2,6 +2,7 @@ import json
 import random
 import time
 
+
 def get_r_code():
     t = str(time.time())
     return t[len(t) - 5: len(t)] + str(random.randint(0, 9)) + str(random.randint(0, 9)) + str(

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ffmpeg
+  name: ffmpeg-deployment
+
+spec:
+  selector:
+    matchLabels:
+      app: ffmpeg
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ffmpeg
+    spec:
+      volumes:
+        - name: codefile
+          hostPath:
+            path: /home/flan/tmp/fs_tmp
+      containers:
+      - name: ffmpeg
+        securityContext:
+          privileged: true
+        image: jrottenberg/ffmpeg
+        imagePullPolicy: IfNotPresent
+        args: ["-re", "-i", "url", "-c", "copy", "-f", "flv", "-y", "rtmp"]
+        volumeMounts:
+        - mountPath: /usr/app/tmp/
+          name: codefile

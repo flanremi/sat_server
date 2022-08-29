@@ -1,5 +1,6 @@
 import json
 
+
 class Node:
     def __init__(self, data: dict) -> None:
         super().__init__()
@@ -21,16 +22,12 @@ class Node:
         self.NonterminatedPods = data.get("Non-terminated Pods")
         self.AllocatedResources = data.get("Allocated resources")
         self.Events = data.get("Events")
-        with open("node_info_static.config","r") as file:
-            try:
-                self.rootPath = json.loads(file.read()).get(self.Name).get("rootPath")
-            except Exception:
-                print(Exception)
-
-
-
-
-
+        self.Ip = data.get("Ip")
+        # with open("node_info_static.config", "r") as file:
+        #     try:
+        #         self.rootPath = json.loads(file.read()).get(self.Name).get("rootPath")
+        #     except Exception:
+        #         print(Exception)
 
     def canUse(self):
         if self.Taints:

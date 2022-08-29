@@ -16,9 +16,9 @@ class Time_vary_1:
     # para_list file_path, user_latitude, user_longitude, service_duration(min)
     def __init__(self, u_lat, u_lon, s_dur):
         self.file_path = "sat-bit-o1s120.txt"
-        self.u_lat = u_lat
-        self.u_lon = u_lon
-        self.s_dur = s_dur
+        self.u_lat = float(u_lat)
+        self.u_lon = float(u_lon)
+        self.s_dur = int(s_dur)
 
     def readtxt(self):
         filename = self.file_path  # 给定文件路径
