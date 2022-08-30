@@ -1,16 +1,20 @@
 import subprocess
 
-from pycode.leslie_sysinfo_code import get_all_node_name_ip
 import yaml
 
-from pycode.Node import *
-from pycode.utils import *
+from server.pycode.leslie_sysinfo_code import *
+from server.pycode.utils import *
+from server.pycode.Node import *
 
 
 def sname2ip(sname):
     nodes = get_all_node_name_ip()
     # todo 映射节点名和卫星名
-    return Node({"Name": "ubuntu", "Ip": nodes[0][1]})
+    if sname == "master":
+        return Node({"Name":nodes[0][0], "Ip": nodes[0][1]})
+    else:
+        return Node({"Name": nodes[1][0], "Ip": nodes[1][1]})
+    # return Node({"Name": "ubuntu", "Ip": nodes[0][1]})
 
 
 def pushStream(start: Node, target: Node, name, url_suf):
@@ -18,6 +22,7 @@ def pushStream(start: Node, target: Node, name, url_suf):
         yaml_file = yaml.load(f, Loader=yaml.FullLoader)
 
         yaml_file['spec']['template']['spec']['nodeName'] = str(start.Name)
+        yaml_file['spec']['template']['spec']['volumes'][0]['hostPath']['path'] = "/home/dxh/cdn/"
 
         yaml_file['spec']['template']['spec']['containers'][0]['args'][2] = "/usr/app/tmp/" + name
         yaml_file['spec']['template']['spec']['containers'][0]['args'][8] = "rtmp://" + target.Ip + "/live/" + name + \

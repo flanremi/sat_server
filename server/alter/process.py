@@ -6,7 +6,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from abc import ABCMeta, abstractmethod
 
-from algorithm import Algo
+from server.algorithm import Algo
 from time_vary_2 import Time_vary_2
 
 
@@ -17,8 +17,9 @@ class CoreInter(metaclass=ABCMeta):
         pass
 
     # 0 start 1 processing 11 add 12 delete 2 end
+    # params
     @abstractmethod
-    def refreshListener(self, core, period, fin_list: list):
+    def refreshListener(self, core, period, fin_list: list, now_s_pos: int, now_file: dict):
         pass
 
 
@@ -76,7 +77,7 @@ class TimeCore:
     def refresh(self):
         self.inRefresh = True
         if self.listener:
-            self.listener.refreshListener(self, 0, self.client_list)
+            self.listener.refreshListener(self, 0, self.client_list, -1, {})
         # 基于当前文件访问情况决定各文件是否缓存
         self.dispatch()
         for i in range(self.client_num):
@@ -84,27 +85,26 @@ class TimeCore:
             client_pre = self.client_list_pre[i]
             for key, value in client.items():
                 file_pre = client_pre.get(key)
+                file = {"name": key}
+                for k, v in value.items():
+                    file.update({k: v})
                 if file_pre:
                     if file_pre.get("is_cache") == 1 and value.get("is_cache") == 0:
                         if self.listener:
-                            self.tp.submit(self.listener.refreshListener, 12, self.client_list)
+                            self.tp.submit(self.listener.refreshListener, self, 12, self.client_list, i, file)
                     elif file_pre.get("is_cache") == 0 and value.get("is_cache") == 1:
                         if self.listener:
-                            self.tp.submit(self.listener.refreshListener, 11, self.client_list)
+                            self.tp.submit(self.listener.refreshListener, self, 11, self.client_list, i, file)
                 else:
                     file_pre = {}
                     client_pre.update({key: file_pre})
                     if value.get("is_cache") == 1:
                         if self.listener:
-                            self.tp.submit(self.listener.refreshListener, 11, self.client_list)
+                            self.tp.submit(self.listener.refreshListener, self, 11, self.client_list, i, file)
                 file_pre.update(value)
         if self.listener:
-            self.listener.refreshListener(self, 2, self.client_list)
+            self.listener.refreshListener(self, 2, self.client_list, -1, {})
         self.inRefresh = False
-        # with open("mv2.mp4", "rb") as file:
-        #     res = requests.post("http://192.168.50.63:4995/upload", files={"file": file}, data={"name": "cheat1.mp4"})
-        #     print(res.text)
-        # pass
 
     def run(self):
         def run_():
@@ -123,3 +123,16 @@ class TimeCore:
 
     def getfile(self, client_pos, name):
         return self.client_list_pre[client_pos].get(name)
+
+    def pos2Ip(self, pos):
+        from server.pycode.leslie_sysinfo_code import get_all_node_name_ip
+        from server.pycode.Node import Node
+
+        nodes = get_all_node_name_ip()
+        # todo 映射节点名和卫星名
+        # return Node({"Name": "ubuntu", "Ip": nodes[0][1]})
+        if pos == 0:
+            return Node({"Name": nodes[0][0], "Ip": nodes[0][1]})
+        else:
+            return Node({"Name": nodes[1][0], "Ip": nodes[1][1]})
+        # return Node({"Name": "ubuntu", "Ip": "192.168.1.105"})

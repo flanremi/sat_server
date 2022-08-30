@@ -15,6 +15,7 @@ spec:
       labels:
         app: srs
     spec:
+      nodeName: k8s-master
       containers:
       - name: srs
         image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:4

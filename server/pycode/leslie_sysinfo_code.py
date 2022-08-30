@@ -2,11 +2,22 @@ import os
 import subprocess
 import yaml
 
-from pycode import Node
-from pycode.utils import *
-from pycode.leslie_temporary_info import *
+from server.pycode.Node import *
+from server.pycode.utils import *
+from server.pycode.leslie_temporary_info import *
 
 path = "tmp_deploy/"
+
+
+def splitNodeStr(s: str):
+    result = []
+    start = 0
+    for i in range(len(s)):
+        if s[i] == " " and i > 1 and s[i - 1] != " " and s[i - 2] != " ":
+            result.append(s[start:i])
+        elif s[i] != "" and i > 1 and s[i - 1] == " " and s[i - 2] == " ":
+            start = i
+    return result
 
 
 def get_all_node_name_ip():
@@ -19,7 +30,7 @@ def get_all_node_name_ip():
         if i == 0 or i == len(kube_nodes_info) - 1 or line[i] == "":
             i += 1
             continue
-        node_l = line.split("   ")
+        node_l = splitNodeStr(line)
         all_nodes.append((node_l[0], node_l[5]))
         i += 1
 
@@ -46,10 +57,10 @@ def get_all_node_name():
     return all_nodenames
 
 
-get_all_node_name_ip()
+# get_all_node_name_ip()
 
 
-def node_bind(node: Node.Node, yaml_name: str):
+def node_bind(node: Node, yaml_name: str):
     with open(yaml_name + ".yaml", 'r') as f:
         yaml_file = yaml.load(f, Loader=yaml.FullLoader)
         log(node.Name)
