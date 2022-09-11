@@ -13,6 +13,7 @@ import k8s_tools
 from time_vary_1 import Time_vary_1
 
 lock = Lock()
+lock_camera = Lock()
 
 
 class Listener(CoreInter, ABC):
@@ -139,6 +140,25 @@ def stop_video():
     iplayer.stop()
     # iplayer.release()
     return "OK"
+
+
+@app.route("/yolo_notify", methods=['POST'])
+def yolo_notify():
+    box = request.form.get("box")
+    camera = request.form.get("name")
+    lock.acquire()
+    with open("camera" + str(camera) + ".txt", "w") as file:
+        file.write(str(box))
+    lock.release()
+    return "OK"
+
+
+@app.route("/yolo_get", methods=['POST'])
+def yolo_get():
+    camera = request.form.get("camera")
+    with open("camera" + str(camera) + ".txt", "r") as file:
+        result = file.read()
+    return result
 
 
 if __name__ == '__main__':
