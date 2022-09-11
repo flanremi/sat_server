@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: srs-d05
+  name: srs-d05-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: srs-d05
+  template:
+    metadata:
+      labels:
+        app: srs-d05
+    spec:
+      containers:
+      - args:
+        - -c
+        - conf/docker.conf
+        command:
+        - ./objs/srs
+        image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:4
+        imagePullPolicy: IfNotPresent
+        name: srs-d05
+        ports:
+        - containerPort: 1935
+          hostPort: 1935
+        - containerPort: 8080
+          hostPort: 8080
+        - containerPort: 1985
+          hostPort: 1985
+      nodeName: d05

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: srs2
+  name: srs2-deployment
+
+spec:
+  selector:
+    matchLabels:
+      app: srs2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: srs2
+    spec:
+      nodeName: k8s-node-3
+      containers:
+      - name: srs2
+        image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:4
+        imagePullPolicy: IfNotPresent
+        command: ["./objs/srs"]
+        args: ["-c","conf/docker.conf"]
+        ports:
+        - containerPort: 1935
+          hostPort: 1935
+        - containerPort: 8080
+          hostPort: 8080
+        - containerPort: 1985
+          hostPort: 1985
+
+  
+          
+
+      
+
