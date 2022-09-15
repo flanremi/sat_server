@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: file-server
+  name: file-server-deployment
+
+spec:
+  selector:
+    matchLabels:
+      app: file-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: file-server
+    spec:
+      volumes:
+        - name: codefile
+          hostPath:
+            path: /home/k8s/tmp/fs_tmp/
+      containers:
+      - name: file-server
+        securityContext:
+          privileged: true
+        image: flanremi/file_server:v3
+        imagePullPolicy: IfNotPresent
+        command: ["flask"]
+        args: ["run", "--host=0.0.0.0"]
+        volumeMounts:
+        - mountPath: /usr/src/app/file
+          name: codefile
+        ports:
+          - containerPort: 5000
+            hostPort: 4995
+

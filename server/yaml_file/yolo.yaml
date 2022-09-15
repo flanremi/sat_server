@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: yolo
+  name: yolo-deployment
+
+spec:
+  selector:
+    matchLabels:
+      app: yolo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: yolo
+    spec:
+      containers:
+      - name: yolo
+        securityContext:
+          privileged: true
+        image: flanremi/hikvision:v02
+        imagePullPolicy: IfNotPresent
+        args: ["-i","/dev/video0","-s","640x360","-vcodec","libx264","-max_delay","10","-r","5","-b:v","10000k","-b:a","10000k","-f","flv","rtmp://192.168.50.63/live/pi01"]

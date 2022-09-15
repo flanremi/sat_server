@@ -5,6 +5,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from abc import ABCMeta, abstractmethod
+import server.k8s_tools
 
 from server.algorithm import Algo
 from time_vary_2 import Time_vary_2
@@ -14,6 +15,10 @@ class CoreInter(metaclass=ABCMeta):
 
     @abstractmethod
     def timeChangeListener(self, core):
+        pass
+
+    @abstractmethod
+    def initListener(self, core):
         pass
 
     # 0 start 1 processing 11 add 12 delete 2 end
@@ -39,6 +44,7 @@ class TimeCore:
         self.inRefresh = False
         self.listener = None
 
+    # name是缓存文件的名字
     def addRequest(self, client_pos: int, name: str):
         while self.inRefresh:
             time.sleep(0.5)
@@ -108,12 +114,14 @@ class TimeCore:
 
     def run(self):
         def run_():
+            if self.listener:
+                self.listener.initListener(self)
             while True:
                 time.sleep(1)
                 self._Ttime += 1
                 if self.listener:
                     self.listener.timeChangeListener(self)
-                if self._Ttime % 60 == 0:
+                if self._Ttime % 20 == 0:
                     self.tp.submit(self.refresh)
 
         self.tp.submit(run_)
@@ -124,15 +132,16 @@ class TimeCore:
     def getfile(self, client_pos, name):
         return self.client_list_pre[client_pos].get(name)
 
-    def pos2Ip(self, pos):
-        from server.pycode.leslie_sysinfo_code import get_all_node_name_ip
-        from server.pycode.Node import Node
-
-        nodes = get_all_node_name_ip()
+    # def pos2Ip(self, pos):
+    #     from server.pycode.leslie_sysinfo_code import get_all_node_name_ip
+    #     from server.pycode.Node import Node
+    #
+    #     nodes = get_all_node_name_ip()
+    #     return Node({"Name": nodes[pos % 2 + 1][0], "Ip": nodes[pos % 2 + 1][1]})
         # todo 映射节点名和卫星名
         # return Node({"Name": "ubuntu", "Ip": nodes[0][1]})
-        if pos == 0:
-            return Node({"Name": nodes[0][0], "Ip": nodes[0][1]})
-        else:
-            return Node({"Name": nodes[1][0], "Ip": nodes[1][1]})
+        # if pos == 0:
+        #     return Node({"Name": nodes[0][0], "Ip": nodes[0][1]})
+        # else:
+        #     return Node({"Name": nodes[1][0], "Ip": nodes[1][1]})
         # return Node({"Name": "ubuntu", "Ip": "192.168.1.105"})

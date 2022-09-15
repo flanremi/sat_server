@@ -2,6 +2,7 @@ import json
 import random
 import time
 from abc import ABC
+import os
 
 import requests as requests
 from threading import Lock
@@ -18,6 +19,19 @@ lock_camera = Lock()
 
 class Listener(CoreInter, ABC):
 
+    def initListener(self, core):
+        from server.pycode.leslie_sysinfo_code import get_all_node_name_ip
+        node = get_all_node_name_ip()
+        result = []
+        for name, ip in node:
+            res = requests.post("http://" + ip + ":4995/query")
+            result.append({"name": name, "cache": json.loads(res.text.replace("\'", "\""))})
+        for i in range(len(core.client_list_pre)):
+            caches = result[i % 2 + 1].get("cache")
+            client = core.client_list_pre[i]
+            for cache in caches:
+                client.update({cache: {"time": 0, "size": os.stat("file/" + cache).st_size / 1024, "is_cache": 1}})
+
     def timeChangeListener(self, core):
         # print(core.getTime())
         pass
@@ -26,13 +40,16 @@ class Listener(CoreInter, ABC):
     def refreshListener(self, core, period, fin_list: list, now_s_pos: int, now_file: dict):
         if period == 11:
             with open("file/" + now_file.get("name"), "rb") as file:
-                res = requests.post("http://" + core.pos2Ip(now_s_pos).Ip + ":4995/upload", files={"file": file},
+                res = requests.post("http://" + k8s_tools.sname2Node(k8s_tools.pos2sname(now_s_pos)).Ip
+                                    + ":4995/upload", files={"file": file},
                                     data={"name": now_file.get("name")})
                 print(res.text)
         elif period == 12:
-            res = requests.post("http://" + core.pos2Ip(now_s_pos).Ip + ":4995/delete",
+            res = requests.post("http://" + k8s_tools.sname2Node(k8s_tools.pos2sname(now_s_pos)).Ip
+                                + ":4995/delete",
                                 data={"name": now_file.get("name")})
             print(res.text)
+        self.initListener(core)
 
 
 theard_pool = ThreadPoolExecutor(max_workers=4)
@@ -48,6 +65,7 @@ core.run()
 # while True:
 #     pass
 k8s_tools.deploySys()
+k8s_tools.deployFileServer()
 import player
 
 iplayer = player.Player()
@@ -62,23 +80,38 @@ def cdn():
     lng = request.form.get("lng")
     dur = request.form.get("dur")
     name = request.form.get("name")
-    t = Time_vary_1(lat, lng, dur).result()
+    satellites = Time_vary_1(lat, lng, dur).result()
     dis_result = []
     i = 0
-    for r in t:
+    for satellite in satellites:
         i += 1
-        client_num = int(r.get("sname")[1:len(r.get("sname"))])
+        client_num = k8s_tools.sname2Pos(satellite.get("sname"))
         core.addRequest(client_num, name)
         file = core.getfile(client_num, name)
+
         if not file or file.get("is_cache") == 0:
-            url = k8s_tools.pushStream(k8s_tools.sname2ip("k8s-master"), k8s_tools.sname2ip(r.get("sname")), name,
-                                       str(i))
-            time.sleep(random.randint(2500, 5000) / 1000)
+            url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d02"), k8s_tools.sname2Node(satellite.get("sname")),
+                                       name, str(random.randint(0, 100)))
+            # time.sleep(random.randint(4500, 6000) / 1000)
         else:
-            url = k8s_tools.pushStream(k8s_tools.sname2ip(r.get("sname")), k8s_tools.sname2ip(r.get("sname")), name,
-                                       str(i))
-        dis_result.append({"url": url, "start": r.get("start"), "lasting": r.get("lasting")})
+            url = k8s_tools.pushStream(k8s_tools.sname2Node(satellite.get("sname")),
+                                       k8s_tools.sname2Node(satellite.get("sname")), name,
+                                       str(random.randint(0, 100) + 100))
+        dis_result.append({"url": url, "start": satellite.get("start"), "lasting": satellite.get("lasting")})
     return json.dumps(dis_result)
+
+
+@app.route("/cdn_show", methods=['POST'])
+def cdn_show():
+    host = request.form.get("host")
+    if not host == "cache":
+        time.sleep(random.randint(4500, 6000) / 1000)
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d02"), k8s_tools.nodeName2Node("d03"), "time.mp4",
+                                   str(10))
+    else:
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d03"), k8s_tools.nodeName2Node("d03"), "time.mp4",
+                                   str(101))
+    return url
 
 
 @app.route("/time_v", methods=['POST'])
@@ -159,6 +192,19 @@ def yolo_get():
     with open("camera" + str(camera) + ".txt", "r") as file:
         result = file.read()
     return result
+
+
+@app.route("/count_move", methods=['POST'])
+def count_move():
+    k8s_tools.deployYolo()
+    return "ok"
+
+
+# @app.route("/count_move_2", methods=['POST'])
+# def count_move():
+#     pos = request.form.get("pos")
+#     k8s_tools.deployYolo2(pos)
+#     return "ok"
 
 
 if __name__ == '__main__':

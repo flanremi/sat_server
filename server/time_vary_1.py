@@ -127,6 +127,7 @@ class Time_vary_1:
         m_out = self.get_l(self.s_dur, float(self.u_lat), float(self.u_lon))
         return m_out
 
+    # 返回sname及其对象信息
     def result(self):
         r = []
         message_out = self.produce().split("\n")
