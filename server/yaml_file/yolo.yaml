@@ -19,6 +19,6 @@ spec:
       - name: yolo
         securityContext:
           privileged: true
-        image: flanremi/hikvision:v02
+        image: flanremi/hikvision:v03
         imagePullPolicy: IfNotPresent
         args: ["-i","/dev/video0","-s","640x360","-vcodec","libx264","-max_delay","10","-r","5","-b:v","10000k","-b:a","10000k","-f","flv","rtmp://192.168.50.63/live/pi01"]

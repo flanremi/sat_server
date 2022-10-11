@@ -50,7 +50,10 @@ class TimeCore:
             time.sleep(0.5)
         client = self.client_list[client_pos]
         if not client.get(name):
-            client.update({name: {"time": 0, "size": os.stat("file/" + name).st_size / 1024, "is_cache": 0}})
+            if os.path.exists("file/" + name):
+                client.update({name: {"time": 0, "size": os.stat("file/" + name).st_size / 1024, "is_cache": 0}})
+            else:
+                client.update({name: {"time": 0, "size": 0, "is_cache": 0}})
         file = client.get(name)
         file.update({"time": file.get("time") + 1})
 
@@ -81,6 +84,7 @@ class TimeCore:
 
     # todo 处理异步问题，处理传输时更新问题，处理cache冲突问题
     def refresh(self):
+        print("refresh")
         self.inRefresh = True
         if self.listener:
             self.listener.refreshListener(self, 0, self.client_list, -1, {})
@@ -113,17 +117,20 @@ class TimeCore:
         self.inRefresh = False
 
     def run(self):
+
         def run_():
+            # 务必等待一个初始化时间，不然会报错
+            time.sleep(10)
             if self.listener:
                 self.listener.initListener(self)
             while True:
-                time.sleep(1)
+                time.sleep(0.98)
                 self._Ttime += 1
                 if self.listener:
                     self.listener.timeChangeListener(self)
                 if self._Ttime % 20 == 0:
                     self.tp.submit(self.refresh)
-
+                # print(self._Ttime)
         self.tp.submit(run_)
 
     def setListener(self, listener: CoreInter):

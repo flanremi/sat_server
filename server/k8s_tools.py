@@ -99,6 +99,7 @@ def deploySys():
             subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
+
 def deployFileServer():
     node = get_all_node_name_ip()
     for name, ip in node:
@@ -174,6 +175,16 @@ def deleteSysDeploy():
             infos.append(kube_apply_info)
             os.remove(root + file)
     return infos
+
+
+def deleteYolo(pos):
+    node = get_all_node_name_ip()
+    name, ip = node[pos][0], node[pos][1]
+    yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + name + ".yaml"
+    cmd = "kubectl delete -f " + yaml_file_name
+    kube_apply_info = subprocess.check_output(cmd, shell=True).decode('utf-8')
+    os.remove(yaml_file_name)
+
 
 
 def deleteVideoDeploy():

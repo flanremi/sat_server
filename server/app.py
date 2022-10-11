@@ -49,7 +49,7 @@ class Listener(CoreInter, ABC):
                                 + ":4995/delete",
                                 data={"name": now_file.get("name")})
             print(res.text)
-        self.initListener(core)
+        # self.initListener(core)
 
 
 theard_pool = ThreadPoolExecutor(max_workers=4)
@@ -81,6 +81,7 @@ def cdn():
     dur = request.form.get("dur")
     name = request.form.get("name")
     satellites = Time_vary_1(lat, lng, dur).result()
+    print(satellites)
     dis_result = []
     i = 0
     for satellite in satellites:
@@ -200,11 +201,18 @@ def count_move():
     return "ok"
 
 
-# @app.route("/count_move_2", methods=['POST'])
-# def count_move():
-#     pos = request.form.get("pos")
-#     k8s_tools.deployYolo2(pos)
-#     return "ok"
+@app.route("/count_move_2", methods=['POST'])
+def count_move2():
+    pos = request.form.get("pos")
+    k8s_tools.deployYolo2(int(pos))
+    return "ok"
+
+
+@app.route("/count_move_del_2", methods=['POST'])
+def count_move_del2():
+    pos = request.form.get("pos")
+    k8s_tools.deleteYolo(int(pos))
+    return "ok"
 
 
 if __name__ == '__main__':
