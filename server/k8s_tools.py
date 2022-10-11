@@ -19,7 +19,7 @@ def pos2sname(pos):
 
 # 总的Sname到节点的映射函数
 def sname2Node(sname):
-    pos = sname2Pos(sname) % 2 + 1
+    pos = sname2Pos(sname)
     nodes = get_all_node_name_ip()
     return Node({"Name": nodes[pos][0], "Ip": nodes[pos][1]})
 

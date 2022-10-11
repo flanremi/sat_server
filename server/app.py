@@ -27,10 +27,13 @@ class Listener(CoreInter, ABC):
             res = requests.post("http://" + ip + ":4995/query")
             result.append({"name": name, "cache": json.loads(res.text.replace("\'", "\""))})
         for i in range(len(core.client_list_pre)):
-            caches = result[i % 2 + 1].get("cache")
+            caches = result[i].get("cache")
             client = core.client_list_pre[i]
             for cache in caches:
-                client.update({cache: {"time": 0, "size": os.stat("file/" + cache).st_size / 1024, "is_cache": 1}})
+                if os.path.exists("file/" + cache):
+                    client.update({cache: {"time": 0, "size": os.stat("file/" + cache).st_size / 1024, "is_cache": 1}})
+                else:
+                    client.update({cache: {"time": 0, "size": 0, "is_cache": 0}})
 
     def timeChangeListener(self, core):
         # print(core.getTime())
@@ -91,9 +94,9 @@ def cdn():
         file = core.getfile(client_num, name)
 
         if not file or file.get("is_cache") == 0:
-            url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d02"), k8s_tools.sname2Node(satellite.get("sname")),
+            url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-master"), k8s_tools.sname2Node(satellite.get("sname")),
                                        name, str(random.randint(0, 100)))
-            # time.sleep(random.randint(4500, 6000) / 1000)
+            time.sleep(random.randint(2500, 4000) / 1000)
         else:
             url = k8s_tools.pushStream(k8s_tools.sname2Node(satellite.get("sname")),
                                        k8s_tools.sname2Node(satellite.get("sname")), name,
@@ -106,12 +109,12 @@ def cdn():
 def cdn_show():
     host = request.form.get("host")
     if not host == "cache":
-        time.sleep(random.randint(4500, 6000) / 1000)
-        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d02"), k8s_tools.nodeName2Node("d03"), "time.mp4",
-                                   str(10))
+        time.sleep(random.randint(2500, 4000) / 1000)
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-master"), k8s_tools.nodeName2Node("k8s-node-1"),
+                                   "time.mp4", str(10))
     else:
-        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("d03"), k8s_tools.nodeName2Node("d03"), "time.mp4",
-                                   str(101))
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-node-1"), k8s_tools.nodeName2Node("k8s-node-1"),
+                                   "time.mp4", str(101))
     return url
 
 
