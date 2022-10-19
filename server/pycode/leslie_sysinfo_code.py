@@ -31,6 +31,24 @@ def get_all_node_name_ip():
             i += 1
             continue
         node_l = splitNodeStr(line)
+        if node_l[0].find("master") == -1:
+            all_nodes.append((node_l[0], node_l[5]))
+        i += 1
+
+    return all_nodes
+
+
+def get_all_node_name_ip_with_master():
+    all_nodes = []
+    kube_nodes_info = subprocess.check_output('kubectl get nodes -o=wide', shell=True).decode('utf-8')
+    kube_nodes_info = kube_nodes_info.split('\n')
+
+    i = 0
+    for line in kube_nodes_info:
+        if i == 0 or i == len(kube_nodes_info) - 1 or line[i] == "":
+            i += 1
+            continue
+        node_l = splitNodeStr(line)
         all_nodes.append((node_l[0], node_l[5]))
         i += 1
 

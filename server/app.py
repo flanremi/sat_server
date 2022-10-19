@@ -12,6 +12,8 @@ from concurrent.futures import ThreadPoolExecutor
 from alter.process import TimeCore, CoreInter
 import k8s_tools
 from time_vary_1 import Time_vary_1
+from Constants import *
+
 
 lock = Lock()
 lock_camera = Lock()
@@ -25,15 +27,23 @@ class Listener(CoreInter, ABC):
         result = []
         for name, ip in node:
             res = requests.post("http://" + ip + ":4995/query")
-            result.append({"name": name, "cache": json.loads(res.text.replace("\'", "\""))})
-        for i in range(len(core.client_list_pre)):
-            caches = result[i].get("cache")
-            client = core.client_list_pre[i]
+            result.append({"name": name.split("-")[2], "cache": json.loads(res.text.replace("\'", "\""))})
+            client = core.client_list_pre[int(name.split("-")[2])]
+            caches = json.loads(res.text.replace("\'", "\""))
             for cache in caches:
                 if os.path.exists("file/" + cache):
                     client.update({cache: {"time": 0, "size": os.stat("file/" + cache).st_size / 1024, "is_cache": 1}})
                 else:
                     client.update({cache: {"time": 0, "size": 0, "is_cache": 0}})
+        print("init")
+        # for i in range(len(core.client_list_pre)):
+        #     caches = result[i].get("cache")
+        #     client = core.client_list_pre[i]
+        #     for cache in caches:
+        #         if os.path.exists("file/" + cache):
+        #             client.update({cache: {"time": 0, "size": os.stat("file/" + cache).st_size / 1024, "is_cache": 1}})
+        #         else:
+        #             client.update({cache: {"time": 0, "size": 0, "is_cache": 0}})
 
     def timeChangeListener(self, core):
         # print(core.getTime())
@@ -71,7 +81,7 @@ k8s_tools.deploySys()
 k8s_tools.deployFileServer()
 import player
 
-iplayer = player.Player()
+# iplayer = player.Player()
 
 app = Flask(__name__)
 
@@ -94,7 +104,8 @@ def cdn():
         file = core.getfile(client_num, name)
 
         if not file or file.get("is_cache") == 0:
-            url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-master"), k8s_tools.sname2Node(satellite.get("sname")),
+            url = k8s_tools.pushStream(k8s_tools.nodeName2Node(master_name),
+                                       k8s_tools.sname2Node(satellite.get("sname")),
                                        name, str(random.randint(0, 100)))
             time.sleep(random.randint(2500, 4000) / 1000)
         else:
@@ -110,10 +121,10 @@ def cdn_show():
     host = request.form.get("host")
     if not host == "cache":
         time.sleep(random.randint(2500, 4000) / 1000)
-        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-master"), k8s_tools.nodeName2Node("k8s-node-1"),
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node(master_name), k8s_tools.nodeName2Node(node_cache_name),
                                    "time.mp4", str(10))
     else:
-        url = k8s_tools.pushStream(k8s_tools.nodeName2Node("k8s-node-1"), k8s_tools.nodeName2Node("k8s-node-1"),
+        url = k8s_tools.pushStream(k8s_tools.nodeName2Node(node_cache_name), k8s_tools.nodeName2Node(node_cache_name),
                                    "time.mp4", str(101))
     return url
 
@@ -136,6 +147,7 @@ def time_v():
 def get_cache():
     from server.pycode.leslie_sysinfo_code import get_all_node_name_ip
     node = get_all_node_name_ip()
+
     result = []
 
     def get_client_cache(n: str, url: str):
@@ -165,18 +177,9 @@ def remove_video():
     return k8s_tools.deleteVideoDeploy()
 
 
-@app.route("/play_video", methods=['POST'])
-def play_video():
-    url = request.form.get("url")
-    iplayer.play(url)
-    return "OK"
-
-
-@app.route("/stop_video", methods=['POST'])
-def stop_video():
-    iplayer.stop()
-    # iplayer.release()
-    return "OK"
+@app.route("/remove_3yolo", methods=['POST'])
+def remove_3yolo():
+    return k8s_tools.delete3Yolo()
 
 
 @app.route("/yolo_notify", methods=['POST'])

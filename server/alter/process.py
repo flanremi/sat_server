@@ -84,15 +84,17 @@ class TimeCore:
 
     # todo 处理异步问题，处理传输时更新问题，处理cache冲突问题
     def refresh(self):
-        print("refresh")
         self.inRefresh = True
         if self.listener:
             self.listener.refreshListener(self, 0, self.client_list, -1, {})
         # 基于当前文件访问情况决定各文件是否缓存
         self.dispatch()
+        # print(self.client_list)
+        # print(self.client_list_pre)
         for i in range(self.client_num):
             client = self.client_list[i]
             client_pre = self.client_list_pre[i]
+
             for key, value in client.items():
                 file_pre = client_pre.get(key)
                 file = {"name": key}
@@ -120,7 +122,7 @@ class TimeCore:
 
         def run_():
             # 务必等待一个初始化时间，不然会报错
-            time.sleep(10)
+            time.sleep(30)
             if self.listener:
                 self.listener.initListener(self)
             while True:
@@ -130,7 +132,8 @@ class TimeCore:
                     self.listener.timeChangeListener(self)
                 if self._Ttime % 20 == 0:
                     self.tp.submit(self.refresh)
-                # print(self._Ttime)
+
+
         self.tp.submit(run_)
 
     def setListener(self, listener: CoreInter):

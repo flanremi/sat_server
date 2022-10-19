@@ -5,6 +5,7 @@ import yaml
 from server.pycode.leslie_sysinfo_code import *
 from server.pycode.utils import *
 from server.pycode.Node import *
+from Constants import *
 
 
 # 总的Sname到卫星序号的映射函数
@@ -20,19 +21,21 @@ def pos2sname(pos):
 # 总的Sname到节点的映射函数
 def sname2Node(sname):
     pos = sname2Pos(sname)
-    nodes = get_all_node_name_ip()
-    return Node({"Name": nodes[pos][0], "Ip": nodes[pos][1]})
+    nodes = get_all_node_name_ip_with_master()
+    for name, ip in nodes:
+        if name.find(node_name_pre + str(pos)) != -1:
+            return Node({"Name": name, "Ip": ip})
 
 
 def nodeName2Ip(node_name):
-    nodes = get_all_node_name_ip()
+    nodes = get_all_node_name_ip_with_master()
     for name, ip in nodes:
         if name == node_name:
             return ip
 
 
 def nodeName2Node(node_name):
-    nodes = get_all_node_name_ip()
+    nodes = get_all_node_name_ip_with_master()
     for name, ip in nodes:
         if name == node_name:
             return Node({"Name": name, "Ip": ip})
@@ -84,6 +87,8 @@ def pushStream(start: Node, target: Node, name, url_suf):
 def deploySys():
     node = get_all_node_name_ip()
     for name, ip in node:
+        if name.find("master") != -1:
+            continue
         with open("yaml_file/srs_run.yaml", 'r') as f:
             yaml_file = yaml.load(f, Loader=yaml.FullLoader)
             yaml_file['metadata']['labels']['app'] = "srs-" + name
@@ -99,10 +104,11 @@ def deploySys():
             subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
-
 def deployFileServer():
     node = get_all_node_name_ip()
     for name, ip in node:
+        if name.find("master") != -1:
+            continue
         with open("yaml_file/file_server.yaml", 'r') as f:
             yaml_file = yaml.load(f, Loader=yaml.FullLoader)
             yaml_file['metadata']['labels']['app'] = "file-server-" + name
@@ -119,9 +125,10 @@ def deployFileServer():
 
 
 def deployYolo():
-    node = get_all_node_name_ip()
-    i = 0
-    for name, ip in node:
+    camera_ip = camera_url
+    for i in range(3):
+        node = sname2Node("l" + "1" + str(i))
+        name, ip = node.Name, node.Ip
         with open("yaml_file/yolo.yaml", 'r') as f:
             yaml_file = yaml.load(f, Loader=yaml.FullLoader)
             yaml_file['metadata']['labels']['app'] = "yolo-" + name
@@ -131,9 +138,9 @@ def deployYolo():
             yaml_file['spec']['template']['spec']['nodeName'] = name
             yaml_file['spec']['template']['spec']['containers'][0]['name'] = "yolo-" + name
             yaml_file['spec']['template']['spec']['containers'][0]['command'] = ["./start.sh"]
-            yaml_file['spec']['template']['spec']['containers'][0]['args'] = ["192.168.50.25" + str(i),
+            yaml_file['spec']['template']['spec']['containers'][0]['args'] = [camera_ip[i],
                                                                               "admin", "osm123onap",
-                                                                              "192.168.50.205:5000",
+                                                                              host_url,
                                                                               "c" + str(i)]
             yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + name + ".yaml"
             with open(yaml_file_name, "w") as out:
@@ -144,22 +151,22 @@ def deployYolo():
 
 
 def deployYolo2(pos):
-    node = get_all_node_name_ip()
-    name, ip = node[pos][0], node[pos][1]
+    node = sname2Node("l" + str(pos))
+
     with open("yaml_file/yolo.yaml", 'r') as f:
         yaml_file = yaml.load(f, Loader=yaml.FullLoader)
-        yaml_file['metadata']['labels']['app'] = "yolo-" + name
-        yaml_file['metadata']['name'] = "yolo-" + name + "-deployment"
-        yaml_file['spec']['selector']['matchLabels']['app'] = "yolo-" + name
-        yaml_file['spec']['template']['metadata']['labels']['app'] = "yolo-" + name
-        yaml_file['spec']['template']['spec']['nodeName'] = name
-        yaml_file['spec']['template']['spec']['containers'][0]['name'] = "yolo-" + name
+        yaml_file['metadata']['labels']['app'] = "yolo-" + node.Name
+        yaml_file['metadata']['name'] = "yolo-" + node.Name + "-deployment"
+        yaml_file['spec']['selector']['matchLabels']['app'] = "yolo-" + node.Name
+        yaml_file['spec']['template']['metadata']['labels']['app'] = "yolo-" + node.Name
+        yaml_file['spec']['template']['spec']['nodeName'] = node.Name
+        yaml_file['spec']['template']['spec']['containers'][0]['name'] = "yolo-" + node.Name
         yaml_file['spec']['template']['spec']['containers'][0]['command'] = ["./start.sh"]
-        yaml_file['spec']['template']['spec']['containers'][0]['args'] = ["192.168.50.25" + str(pos),
+        yaml_file['spec']['template']['spec']['containers'][0]['args'] = [camera_url[int(pos)],
                                                                           "admin", "osm123onap",
-                                                                          "192.168.50.205:5000",
+                                                                          host_url,
                                                                           "c" + str(pos)]
-        yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + name + ".yaml"
+        yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + node.Name + ".yaml"
         with open(yaml_file_name, "w") as out:
             yaml.dump(yaml_file, out)
         cmd = "kubectl apply -f " + yaml_file_name
@@ -178,13 +185,23 @@ def deleteSysDeploy():
 
 
 def deleteYolo(pos):
-    node = get_all_node_name_ip()
-    name, ip = node[pos][0], node[pos][1]
-    yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + name + ".yaml"
+    node = sname2Node("l" + str(pos))
+    yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + node.Name + ".yaml"
     cmd = "kubectl delete -f " + yaml_file_name
     kube_apply_info = subprocess.check_output(cmd, shell=True).decode('utf-8')
     os.remove(yaml_file_name)
 
+
+def delete3Yolo():
+    infos = []
+    for i in range(3):
+        node = sname2Node("l" + "1" + str(i))
+        yaml_file_name = "yaml_file/tmp/sys/yolo_run_" + node.Name + ".yaml"
+        cmd = "kubectl delete -f " + yaml_file_name
+        kube_apply_info = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        infos.append(kube_apply_info)
+        os.remove(yaml_file_name)
+    return infos
 
 
 def deleteVideoDeploy():
@@ -197,3 +214,6 @@ def deleteVideoDeploy():
             os.remove(root + file)
     return infos
 # pushStream(sname2ip(""), sname2ip(""), "cheat.mp4", "11919")
+
+
+# deleteSysDeploy()
